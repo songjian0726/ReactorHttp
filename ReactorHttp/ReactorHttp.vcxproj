@@ -98,6 +98,7 @@
     <ClInclude Include="EventLoop.h" />
     <ClInclude Include="HttpRequest.h" />
     <ClInclude Include="HttpResponse.h" />
+    <ClInclude Include="Log.h" />
     <ClInclude Include="TcpConnection.h" />
     <ClInclude Include="TcpServer.h" />
     <ClInclude Include="ThreadPool.h" />
@@ -108,9 +109,8 @@
       <CLanguageStandard>gnu11</CLanguageStandard>
     </ClCompile>
     <Link>
-      <LibraryDependencies>
-      </LibraryDependencies>
-      <AdditionalDependencies>-lpthread</AdditionalDependencies>
+      <LibraryDependencies>pthread</LibraryDependencies>
+      <AdditionalDependencies>$(StlAdditionalDependencies);%(Link.AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -118,9 +118,8 @@
       <CLanguageStandard>gnu11</CLanguageStandard>
     </ClCompile>
     <Link>
-      <LibraryDependencies>
-      </LibraryDependencies>
-      <AdditionalDependencies>-lpthread</AdditionalDependencies>
+      <LibraryDependencies>pthread</LibraryDependencies>
+      <AdditionalDependencies>$(StlAdditionalDependencies);%(Link.AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

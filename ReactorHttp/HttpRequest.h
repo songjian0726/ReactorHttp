@@ -1,5 +1,6 @@
 #pragma once
 #include"Buffer.h"
+#include"HttpResponse.h"
 #include<stdbool.h>
 
 //请求头键值对
@@ -51,10 +52,19 @@ bool parseHttpRequestLine(struct HttpRequest* request, struct Buffer* readBuf);
 bool parseHttpRequestHeader(struct HttpRequest* request, struct Buffer* readBuf);
 
 //解析http请求  解析是把http请求拆分
-bool parseHttpRequest(struct HttpRequest* request, struct Buffer* readBuf);
+bool parseHttpRequest(struct HttpRequest* request, struct Buffer* readBuf, struct HttpResponse* response, struct Buffer* sendBuf, int socket);
 
 //处理http请求 处理是根据request结构体里的数据做出相应反馈
-bool processHttpRequest(struct HttpRequest* request);
+bool processHttpRequest(struct HttpRequest* request, struct HttpResponse* response);
 
 //解码字符串
 void decodeMsg(char* to, char* from);
+
+
+const char* getFileType(const char* name);
+
+int sendFile(const char* fileName, struct Buffer* sendBuf, int cfd);
+
+int sendDir(const char* dirName, struct Buffer* sendBuf, int cfd);
+
+

@@ -1,3 +1,6 @@
+#define _GNU_SOURCE
+
+
 #include "HttpRequest.h"
 #include<stdio.h>
 #include<stdlib.h>
@@ -5,13 +8,21 @@
 #include<strings.h>
 #include<sys/stat.h>
 #include<assert.h>
+#include<dirent.h>
+#include<fcntl.h>
+#include<unistd.h>
+#include<ctype.h>
+#include"Log.h"
 
 #define HeaderSize (12)
 struct HttpRequest* httpRequestInit()
 {
     struct HttpRequest* request = (struct HttpRequest*)malloc(sizeof(struct HttpRequest));
     httpRequestReset(request);
+    Debug("httpRequest 19");
     request->reqHeaders = (struct HttpRequest*)malloc(sizeof(struct HttpRequest) * HeaderSize);
+    Debug("httpRequest 21");
+
     return request;
 }
 
@@ -54,8 +65,8 @@ enum HttpRequestState httpRequestState(struct HttpRequest* request)
 
 void httpRequestAddHeader(struct HttpRequest* request, const char* key, const char* value)
 {
-    request->reqHeaders[request->reqHeadersNum].key = key;
-    request->reqHeaders[request->reqHeadersNum].value = value;
+    request->reqHeaders[request->reqHeadersNum].key = (char*)key;
+    request->reqHeaders[request->reqHeadersNum].value = (char*)value;
     request->reqHeadersNum++;
 }
 
@@ -71,16 +82,28 @@ char* httpRequestGetHeader(struct HttpRequest* request, const char* key)
     return NULL;
 }
 
-char* splitRequestLine(const char* start, const char* end, const char* sub, char** ptr) {//sub是要检测的子字符串
+char* splitRequestLine(const char* start, const char* end, const char* sub, char** ptr) {
     char* space = end;
-    if (sub != NULL) { //分离最后一段时，sub传入NULL
-        char* space = memmem(start, end - start, sub, sizeof(sub));//找到空格的位置，第一个空格前是GET/POSE
+    Debug("%s", start);
+    if (sub != NULL)
+    {
+        Debug("request.c 87");
+        space = memmem(start, end - start, sub, strlen(sub));
+        Debug("%s", space);
         assert(space != NULL);
+        Debug("request.c 90");
+
     }
     int length = space - start;
+    Debug("request.c 94");
+
     char* tmp = (char*)malloc(length + 1);
+    Debug("request.c 97");
+
     strncpy(tmp, start, length);
     tmp[length] = '\0';
+    Debug("request.c 101");
+
     *ptr = tmp;
     return space + 1;
 }
@@ -93,11 +116,16 @@ bool parseHttpRequestLine(struct HttpRequest* request, struct Buffer* readBuf)
     char* start = readBuf->data + readBuf->readPos;
     //请求行总长度
     int lineSize = end - start;
+    Debug("%s  %d", start, lineSize);
 
     if (lineSize) {
+        Debug("request.c 116");
         start = splitRequestLine(start, end, " ", &request->method);//请求方式  最后一个参数是指针的地址 传出参数
+        Debug("request.c 117");
         start = splitRequestLine(start, end, " ", &request->url);//路径
+        Debug("request.c 119");
         splitRequestLine(start, end, NULL, &request->version);//版本
+        Debug("requset.c 121");
 #if 0
         //请求方式 GET等
         char* space = memmem(start, lineSize, " ", 1);//找到空格的位置，第一个空格前是GET/POSE
@@ -171,17 +199,20 @@ bool parseHttpRequestHeader(struct HttpRequest* request, struct Buffer* readBuf)
     return false;
 }
 
-bool parseHttpRequest(struct HttpRequest* request, struct Buffer* readBuf)
+bool parseHttpRequest(struct HttpRequest* request, struct Buffer* readBuf, struct HttpResponse* response, struct Buffer* sendBuf, int socket)
 {
+    Debug("%s", readBuf->data);
     bool flag = true;
     while (request->curState != ParseReqDone) {
         switch (request->curState)
         {
         case ParseReqLine:
             flag = parseHttpRequestLine(request, readBuf);
+            Debug("line down");
             break;
         case ParseReqHeaders:
             flag = parseHttpRequestHeader(request, readBuf);
+            Debug("header down");
             break;
         case ParseReqBody://处理POST请求时需要考虑这部分 此处暂不处理
             break;
@@ -193,8 +224,9 @@ bool parseHttpRequest(struct HttpRequest* request, struct Buffer* readBuf)
         }
         if (request->curState == ParseReqDone) { //解析完毕后 准备回复数据
             //1.根据解析出的数据对客户端的请求作出处理
-
+            processHttpRequest(request, response);
             //2.组织响应数据并返回
+            httpResponsePrepareMsg(response, sendBuf, socket);
         }
     }
 
@@ -203,7 +235,7 @@ bool parseHttpRequest(struct HttpRequest* request, struct Buffer* readBuf)
 }
 
 //处理request
-bool processHttpRequest(struct HttpRequest* request)
+bool processHttpRequest(struct HttpRequest* request, struct HttpResponse* response)
 {
     // 解析请求行 get /xxx/1.jpg http/1.1
     if (strcasecmp(request->method, "get") != 0)
@@ -227,23 +259,42 @@ bool processHttpRequest(struct HttpRequest* request)
     if (ret == -1)
     {
         // 文件不存在 -- 回复404
-
         //sendHeadMsg(cfd, 404, "Not Found", getFileType(".html"), -1);
         //sendFile("404.html", cfd);
+        strcpy(response->fileName, "404.html");
+        response->statusCode = NotFound;
+        strcpy(response->statusMsg, "Not Found");
+        //响应头
+        httpResponseAddHeader(response, "Content-type", getFileType(".html"));
+        response->sendDataFunc = sendFile;
         return 0;
     }
+    strcpy(response->fileName, file);
+    response->statusCode = OK;
+    strcpy(response->statusMsg, "OK");
     // 判断文件类型
-    if (S_ISDIR(st.st_mode))
+    if (S_ISDIR(st.st_mode)) //目录
     {
         // 把这个目录中的内容发送给客户端
         //sendHeadMsg(cfd, 200, "OK", getFileType(".html"), -1);
         //sendDir(file, cfd);
+        //响应头
+        httpResponseAddHeader(response, "Content-type", getFileType(".html"));
+        response->sendDataFunc = sendDir;
+        return 0;
     }
     else
     {
         // 把文件的内容发送给客户端
         //sendHeadMsg(cfd, 200, "OK", getFileType(file), st.st_size);
         //sendFile(file, cfd);
+        //响应头
+        char tmp[12] = { 0 };
+        sprintf(tmp, "%ld", st.st_size);
+        httpResponseAddHeader(response, "Content-type", getFileType(file));
+        httpResponseAddHeader(response, "Content-length", tmp);
+        response->sendDataFunc = sendFile;
+        return 0;
     }
     return false;
 }
@@ -286,4 +337,141 @@ void decodeMsg(char* to, char* from)
         }
     }
     *to = '\0';
+}
+
+
+const char* getFileType(const char* name)
+{
+    // a.jpg a.mp4 a.html
+    // 自右向左查找‘.’字符, 如不存在返回NULL
+    const char* dot = strrchr(name, '.');
+    if (dot == NULL)
+        return "text/plain; charset=utf-8";	// 纯文本
+    if (strcmp(dot, ".html") == 0 || strcmp(dot, ".htm") == 0)
+        return "text/html; charset=utf-8";
+    if (strcmp(dot, ".jpg") == 0 || strcmp(dot, ".jpeg") == 0)
+        return "image/jpeg";
+    if (strcmp(dot, ".gif") == 0)
+        return "image/gif";
+    if (strcmp(dot, ".png") == 0)
+        return "image/png";
+    if (strcmp(dot, ".css") == 0)
+        return "text/css";
+    if (strcmp(dot, ".au") == 0)
+        return "audio/basic";
+    if (strcmp(dot, ".wav") == 0)
+        return "audio/wav";
+    if (strcmp(dot, ".avi") == 0)
+        return "video/x-msvideo";
+    if (strcmp(dot, ".mov") == 0 || strcmp(dot, ".qt") == 0)
+        return "video/quicktime";
+    if (strcmp(dot, ".mpeg") == 0 || strcmp(dot, ".mpe") == 0)
+        return "video/mpeg";
+    if (strcmp(dot, ".vrml") == 0 || strcmp(dot, ".wrl") == 0)
+        return "model/vrml";
+    if (strcmp(dot, ".midi") == 0 || strcmp(dot, ".mid") == 0)
+        return "audio/midi";
+    if (strcmp(dot, ".mp3") == 0)
+        return "audio/mpeg";
+    if (strcmp(dot, ".ogg") == 0)
+        return "application/ogg";
+    if (strcmp(dot, ".pac") == 0)
+        return "application/x-ns-proxy-autoconfig";
+
+    return "text/plain; charset=utf-8";
+}
+
+
+int sendDir(const char* dirName, struct Buffer* sendBuf, int cfd)
+{
+    char buf[4096] = { 0 };
+    sprintf(buf, "<html><head><title>%s</title></head><body><table>", dirName);
+    struct dirent** namelist;//#include<dirent.h>
+    int num = scandir(dirName, &namelist, NULL, alphasort);
+    for (int i = 0; i < num; ++i)
+    {
+        // 取出文件名 namelist 指向的是一个指针数组 struct dirent* tmp[]
+        char* name = namelist[i]->d_name;
+        struct stat st;
+        char subPath[1024] = { 0 };
+        sprintf(subPath, "%s/%s", dirName, name);
+        stat(subPath, &st);
+        if (S_ISDIR(st.st_mode))
+        {
+            // a标签 <a href="">name</a>
+            sprintf(buf + strlen(buf),
+                "<tr><td><a href=\"%s/\">%s</a></td><td>%ld</td></tr>",
+                name, name, st.st_size);
+        }
+        else
+        {
+            sprintf(buf + strlen(buf),
+                "<tr><td><a href=\"%s\">%s</a></td><td>%ld</td></tr>",
+                name, name, st.st_size);
+        }
+        //send(cfd, buf, strlen(buf), 0);
+        bufferAppendString(sendBuf, buf);
+#ifndef MSG_SEND_AUTO
+        bufferSendData(sendBuf, cfd);
+#endif
+        memset(buf, 0, sizeof(buf));
+        free(namelist[i]);
+    }
+    sprintf(buf, "</table></body></html>");
+    //send(cfd, buf, strlen(buf), 0);
+    bufferAppendString(sendBuf, buf);
+#ifndef MSG_SEND_AUTO
+    bufferSendData(sendBuf, cfd);
+#endif
+    free(namelist);
+    return 0;
+}
+
+
+int sendFile(const char* fileName, struct Buffer* sendBuf, int cfd)
+{
+    // 1. 打开文件
+    int fd = open(fileName, O_RDONLY);
+    assert(fd > 0);
+#if 1
+    while (1)
+    {
+        char buf[1024];
+        int len = read(fd, buf, sizeof buf);
+        if (len > 0)
+        {
+            //send(cfd, buf, len, 0);
+            bufferAppendData(sendBuf, buf, len);
+#ifndef MSG_SEND_AUTO
+            bufferSendData(sendBuf, cfd);
+#endif
+            usleep(10); // 这非常重要
+        }
+        else if (len == 0)
+        {
+            break;
+        }
+        else
+        {
+            close(fd);
+            perror("read");
+        }
+    }
+#else
+    off_t offset = 0;
+    int size = lseek(fd, 0, SEEK_END);
+    lseek(fd, 0, SEEK_SET);
+    while (offset < size)
+    {
+        int ret = sendfile(cfd, fd, &offset, size - offset);
+        printf("sending.. size = %d, offset = %d, ret = %d\n", size, offset, ret);
+        printf("ret value: %d\n", ret);
+        if (ret == -1 && errno == EAGAIN)
+        {
+            printf("没数据...\n");
+        }
+    }
+#endif
+    close(fd);
+    return 0;
 }

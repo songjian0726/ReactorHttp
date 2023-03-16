@@ -68,6 +68,8 @@ static int SelectRemove(Channel* channel, EventLoop* evLoop) {
 		return -1;
 	}
 	clearFdSet(channel, data);
+	//通过channel释放对应的tcpconnection资源
+	channel->destroyCallback(channel->arg);
 	return 0;//成功返回0 失败返回-1
 }
 
@@ -104,4 +106,5 @@ static int SelectDispatch(EventLoop* evLoop, int timeout) {
 static int SelectClear(EventLoop* evLoop) {
 	struct SelectData* data = (struct SelectData*)evLoop->dispatcherData;
 	free(data);
+	return 0;
 }

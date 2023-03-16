@@ -1,6 +1,12 @@
 #include "EventLoop.h"
 #include<assert.h>
 #include<sys/socket.h>
+#include<unistd.h>
+#include<stdlib.h>
+#include<stdio.h>
+#include<string.h>
+#include"Log.h"
+
 struct EventLoop* eventLoopInit(){
     return eventLoopInitEx(NULL);
 }
@@ -19,13 +25,14 @@ int readLocalMassage(void* arg) {
 
 struct EventLoop* eventLoopInitEx(const char* threadName){
     struct EventLoop* evLoop = (struct EventLoop*)malloc(sizeof(struct EventLoop));
-
+    Debug("eventLoopInitEx in");
     evLoop->isQuit = false;
     evLoop->threadID = pthread_self();
     pthread_mutex_init(&evLoop->mutex, NULL);//初始化互斥锁
     strcpy(evLoop->threadName, threadName == NULL ? "MainThread" : threadName);
-    evLoop->dispatcher = &EpollDispatcher; //指定了Epoll
+    evLoop->dispatcher = &SelectDispatcher; //指定了
     evLoop->dispatcherData = evLoop->dispatcher->init();
+    Debug("mutexed in");
 
     //链表
     evLoop->head = evLoop->tail = NULL;
@@ -39,10 +46,15 @@ struct EventLoop* eventLoopInitEx(const char* threadName){
         perror("socketpair");
         exit(0);
     }
+    Debug("49 in");
+
     //指定evLoop->socketPair[0]发送，[1]接收 将socketPair[1]封装成一个channel
-    struct Channel* channel = channelInit(evLoop->socketPair[1], ReadEvent, readLocalMassage, NULL, evLoop);
+    struct Channel* channel = channelInit(evLoop->socketPair[1], ReadEvent, readLocalMassage, NULL, NULL, evLoop);//只用来读，用来激活分发模型
     //将封装的channel添加到任务队列
+    Debug("going to add task");
     eventLoopAddTask(evLoop, channel, ADD);
+    Debug("going to return");
+
     return evLoop;
 }
 
@@ -56,7 +68,7 @@ int eventLoopRun(EventLoop* evLoop){
     }
     //循环
     while (!evLoop->isQuit) {
-        dispatcher->dispatch(&evLoop, 2); //超时2s
+        dispatcher->dispatch(evLoop, 2); //超时2s
         eventLoopProcessTask(evLoop);
     }
 
@@ -88,21 +100,24 @@ int eventLoopAddTask(EventLoop* evLoop, Channel* channel, int type){
     node->type = type;
     node->next = NULL;
     //链表为空时
-    if (evLoop->head = NULL) {
+    if (evLoop->head == NULL) {
         evLoop->head = evLoop->tail = node;
     }
     else {
         evLoop->tail->next = node;
         evLoop->tail = node;
+
     }
     pthread_mutex_unlock(&evLoop->mutex);
     //处理节点
     if (evLoop->threadID == pthread_self()) {
         //当前线程为子线程
+
         eventLoopProcessTask(evLoop);
     }
     else {
         //主线程添加任务时 让子线程处理队列中的任务
+
         taskWakeup(evLoop);
     }
 

@@ -1,6 +1,8 @@
 #include"Dispatcher.h"
 #include<sys/epoll.h>
 #include<stdio.h>
+#include<unistd.h>
+#include<stdlib.h>
 
 #define Max (520)
 
@@ -70,6 +72,8 @@ static int epollRemove(Channel* channel, EventLoop* evLoop){
 		perror("epoll_delete");
 		exit(0);
 	}
+	//通过channel释放对应的tcpconnection资源
+	channel->destroyCallback(channel->arg);
 	return ret;
 }
 
@@ -108,4 +112,5 @@ static int epollClear(EventLoop* evLoop){
 	free(data->events);
 	close(data->epfd);
 	free(data);
+	return 0;
 }

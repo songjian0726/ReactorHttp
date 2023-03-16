@@ -1,6 +1,7 @@
 #include "ChannelMap.h"
 #include<stdio.h>
 #include<stdlib.h>
+#include<string.h>
 
 ChannelMap* channelMapInit(int size)
 {

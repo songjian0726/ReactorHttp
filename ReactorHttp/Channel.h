@@ -12,6 +12,8 @@ typedef struct Channel {
 	//回调函数
 	handleFund readCallback;
 	handleFund writeCallback;
+	handleFund destroyCallback;
+
 	//回调函数参数
 	void* arg;
 }Channel;
@@ -24,7 +26,7 @@ enum FDEvent {
 };
 
 //初始化一个Channel
-struct Channel* channelInit(int fd, int events, handleFund readFunc, handleFund writeFunc, void* arg);
+struct Channel* channelInit(int fd, int events, handleFund readFunc, handleFund writeFunc, handleFund destroyFunc, void* arg);
 
 //修改fd的写事件(检测或不检测)
 void writeEventEnable(struct Channel* channel, bool flag);

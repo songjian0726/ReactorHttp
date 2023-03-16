@@ -1,6 +1,8 @@
 #pragma once
 #include"Channel.h"
 #include"EventLoop.h"
+
+struct EventLoop;//
 typedef struct Dispatcher
 {
 	//int

@@ -26,6 +26,7 @@ struct HttpResponse
 	//状态行: 状态码，状态描述(404_NOT_FOUND)等，
 	enum HttpStatusCode statusCode;
 	char statusMsg[128];
+	char fileName[128];
 	//响应头-键值对
 	struct ResponseHeader* headers;
 	int headerNum;//当前相应头中键值对数量
@@ -40,3 +41,6 @@ void httpResponseDestroy(struct HttpResponse* response);
 
 //添加响应头 向响应中添加键值对
 void httpResponseAddHeader(struct HttpResponse* response, const char* key, const char* value);
+
+//组织http相应消息
+void httpResponsePrepareMsg(struct HttpResponse* response, struct Buffer* sendBuf, int socket);

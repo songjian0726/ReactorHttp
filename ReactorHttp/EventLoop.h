@@ -2,6 +2,7 @@
 #include"Dispatcher.h"
 #include"ChannelMap.h"
 #include<pthread.h>
+#include"TcpConnection.h"
 
 extern struct Dispatcher EpollDispatcher;//声明外部的全局变量
 extern struct Dispatcher PollDispatcher;
@@ -14,6 +15,8 @@ typedef struct ChannelElement{
 	struct Channel* channel;
 	struct ChannelElement* next;
 }ChannelElement;
+
+struct Dispatcher;//前向引用
 
 typedef struct EventLoop{
 	bool isQuit;

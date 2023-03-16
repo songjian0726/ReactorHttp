@@ -1,5 +1,6 @@
 #include "ThreadPool.h"
 #include<assert.h>
+#include<stdlib.h>
 
 struct ThreadPool* threadPoolInit(struct EventLoop* mainLoop, int count)
 {
