@@ -7,7 +7,7 @@ int processRead(void* arg) {
 	int count = bufferSocketRead(conn->readBuf, conn->channel->fd);
 	if (count > 0) {//成功接收
 		//解析http
-
+		
 	}
 	else {
 		//断开

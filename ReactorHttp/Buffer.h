@@ -30,3 +30,5 @@ int bufferAppendString(struct Buffer* buffer, const char* data);
 int bufferSocketRead(struct Buffer* buffer, int fd);
 
 
+//根据\r\n取出一行(找到\r\n在数据块中的位置)
+char* bufferFindCRLF(struct Buffer* buffer);

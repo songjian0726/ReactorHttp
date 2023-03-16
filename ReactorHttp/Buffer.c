@@ -108,3 +108,9 @@ int bufferSocketRead(struct Buffer* buffer, int fd)
 	free(tmpbuf);
 	return result;
 }
+
+char* bufferFindCRLF(struct Buffer* buffer)
+{
+	char* ptr = memmem(buffer->data + buffer->readPos, bufferReadableSize(buffer), "\r\n", 2);
+	return ptr;
+}
