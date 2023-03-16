@@ -14,7 +14,7 @@ struct Buffer* bufferInit(int size)
 	if (buffer != NULL) {
 		buffer->data = (char*)malloc(size);
 		buffer->capacity = size;
-		buffer->writePos = buffer->writePos = 0;
+		buffer->writePos = buffer->readPos = 0;
 		memset(buffer->data, 0, size);
 	}
 	return buffer;
@@ -46,7 +46,7 @@ void bufferExtendRoom(struct Buffer* buffer, int size)//这里的size是每次写时写入
 	}
 	else {//内存不够用 扩容
 		void* temp = realloc(buffer->data, buffer->capacity + size);
-		if (temp != NULL) {
+		if (temp == NULL) {
 			return;
 		}
 		memset(temp + buffer->capacity, 0, size);
@@ -90,7 +90,7 @@ int bufferSocketRead(struct Buffer* buffer, int fd)
 {
 	struct iovec vec[2]; //readv需要的结构体数组
 	//初始化数组元素
-	int writeable = bufferReadableSize(buffer);
+	int writeable = bufferWriteableSize(buffer);
 	vec[0].iov_base = buffer->data + buffer->writePos;
 	vec[0].iov_len = writeable;
 
@@ -125,7 +125,7 @@ int bufferSendData(struct Buffer* buffer, int socket)
 	//判断buffer是否有数据
 	int readable = bufferReadableSize(buffer);
 	if (readable > 0) {
-		int count = send(socket, buffer->data + buffer->readPos, readable, 0);
+		int count = send(socket, buffer->data + buffer->readPos, readable, MSG_NOSIGNAL);
 		if (count) {
 			buffer->readPos += count;
 			usleep(1);

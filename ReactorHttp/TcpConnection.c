@@ -16,13 +16,18 @@ int processRead(void* arg) {
 		eventLoopAddTask(conn->evLoop, conn->channel, MODIFY);
 #endif
 		bool flag = parseHttpRequest(conn->request, conn->readBuf, conn->response, conn->writeBuf, socket);
-		Debug("TcpConnection.c 19");
 
 		if (!flag) {
 			//解析失败 回复一个简单的html
 			char* errMsg = "HTTP/1.1 400 BAD Request\r\n\r\n";
 			bufferAppendString(conn->writeBuf, errMsg);
 		}
+	}
+	else {
+		//断开连接 第一种发送方式中，此处不能断开连接
+#ifdef MSG_SEND_AUTO
+		eventLoopAddTask(conn->evLoop, conn->channel, DELETE);
+#endif
 	}
 	//断开连接 第一种发送方式中，此处不能断开连接
 #ifndef MSG_SEND_AUTO

@@ -19,9 +19,7 @@ struct HttpRequest* httpRequestInit()
 {
     struct HttpRequest* request = (struct HttpRequest*)malloc(sizeof(struct HttpRequest));
     httpRequestReset(request);
-    Debug("httpRequest 19");
     request->reqHeaders = (struct HttpRequest*)malloc(sizeof(struct HttpRequest) * HeaderSize);
-    Debug("httpRequest 21");
 
     return request;
 }
@@ -84,26 +82,15 @@ char* httpRequestGetHeader(struct HttpRequest* request, const char* key)
 
 char* splitRequestLine(const char* start, const char* end, const char* sub, char** ptr) {
     char* space = end;
-    Debug("%s", start);
     if (sub != NULL)
     {
-        Debug("request.c 87");
         space = memmem(start, end - start, sub, strlen(sub));
-        Debug("%s", space);
         assert(space != NULL);
-        Debug("request.c 90");
-
     }
     int length = space - start;
-    Debug("request.c 94");
-
     char* tmp = (char*)malloc(length + 1);
-    Debug("request.c 97");
-
     strncpy(tmp, start, length);
     tmp[length] = '\0';
-    Debug("request.c 101");
-
     *ptr = tmp;
     return space + 1;
 }
@@ -116,16 +103,11 @@ bool parseHttpRequestLine(struct HttpRequest* request, struct Buffer* readBuf)
     char* start = readBuf->data + readBuf->readPos;
     //请求行总长度
     int lineSize = end - start;
-    Debug("%s  %d", start, lineSize);
 
     if (lineSize) {
-        Debug("request.c 116");
         start = splitRequestLine(start, end, " ", &request->method);//请求方式  最后一个参数是指针的地址 传出参数
-        Debug("request.c 117");
         start = splitRequestLine(start, end, " ", &request->url);//路径
-        Debug("request.c 119");
         splitRequestLine(start, end, NULL, &request->version);//版本
-        Debug("requset.c 121");
 #if 0
         //请求方式 GET等
         char* space = memmem(start, lineSize, " ", 1);//找到空格的位置，第一个空格前是GET/POSE
@@ -201,18 +183,15 @@ bool parseHttpRequestHeader(struct HttpRequest* request, struct Buffer* readBuf)
 
 bool parseHttpRequest(struct HttpRequest* request, struct Buffer* readBuf, struct HttpResponse* response, struct Buffer* sendBuf, int socket)
 {
-    Debug("%s", readBuf->data);
     bool flag = true;
     while (request->curState != ParseReqDone) {
         switch (request->curState)
         {
         case ParseReqLine:
             flag = parseHttpRequestLine(request, readBuf);
-            Debug("line down");
             break;
         case ParseReqHeaders:
             flag = parseHttpRequestHeader(request, readBuf);
-            Debug("header down");
             break;
         case ParseReqBody://处理POST请求时需要考虑这部分 此处暂不处理
             break;
@@ -445,7 +424,6 @@ int sendFile(const char* fileName, struct Buffer* sendBuf, int cfd)
 #ifndef MSG_SEND_AUTO
             bufferSendData(sendBuf, cfd);
 #endif
-            usleep(10); // 这非常重要
         }
         else if (len == 0)
         {
