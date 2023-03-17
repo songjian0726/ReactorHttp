@@ -2,6 +2,7 @@
 #include<strings.h>
 #include<string.h>
 #include<stdlib.h>
+#include<stdio.h>
 #define ResHeaderSize (16)
 struct HttpResponse* httpResponseInit()
 {
@@ -9,7 +10,7 @@ struct HttpResponse* httpResponseInit()
 	response->headerNum = 0;
 	int size = sizeof(struct ResponseHeader) * ResHeaderSize;
 	response->headers = (struct ResponseHeader*)malloc(size);
-	response->statusCode = Unkown;
+	response->statusCode = Unknown;
 	//³õÊ¼»¯
 	bzero(response->headers, size);
 	bzero(response->statusMsg, sizeof(response->statusMsg));

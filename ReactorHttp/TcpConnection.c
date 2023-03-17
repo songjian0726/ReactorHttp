@@ -19,7 +19,7 @@ int processRead(void* arg) {
 
 		if (!flag) {
 			//解析失败 回复一个简单的html
-			char* errMsg = "HTTP/1.1 400 BAD Request\r\n\r\n";
+			char* errMsg = "Http/1.1 400 Bad Request\r\n\r\n";
 			bufferAppendString(conn->writeBuf, errMsg);
 		}
 	}

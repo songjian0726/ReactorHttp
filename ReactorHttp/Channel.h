@@ -2,7 +2,7 @@
 #include<stdbool.h>
 
 //回调函数的函数指针
-typedef int(*handleFund)(void* arg);
+typedef int(*handleFunc)(void* arg);
 
 typedef struct Channel {
 	//文件描述符
@@ -10,9 +10,9 @@ typedef struct Channel {
 	//对应的事件
 	int events;
 	//回调函数
-	handleFund readCallback;
-	handleFund writeCallback;
-	handleFund destroyCallback;
+	handleFunc readCallback;
+	handleFunc writeCallback;
+	handleFunc destroyCallback;
 
 	//回调函数参数
 	void* arg;
@@ -26,7 +26,7 @@ enum FDEvent {
 };
 
 //初始化一个Channel
-struct Channel* channelInit(int fd, int events, handleFund readFunc, handleFund writeFunc, handleFund destroyFunc, void* arg);
+struct Channel* channelInit(int fd, int events, handleFunc readFunc, handleFunc writeFunc, handleFunc destroyFunc, void* arg);
 
 //修改fd的写事件(检测或不检测)
 void writeEventEnable(struct Channel* channel, bool flag);

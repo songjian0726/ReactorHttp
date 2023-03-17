@@ -1,6 +1,7 @@
 #include "ThreadPool.h"
 #include<assert.h>
 #include<stdlib.h>
+#include"Log.h"
 
 struct ThreadPool* threadPoolInit(struct EventLoop* mainLoop, int count)
 {
@@ -8,21 +9,26 @@ struct ThreadPool* threadPoolInit(struct EventLoop* mainLoop, int count)
 	pool->index = 0;
 	pool->isStart = false;
 	pool->mainLoop = mainLoop;
+	pool->threadNum = count;
 	pool->workerThreads = (struct WorkerThread*)malloc(sizeof(struct WorkerThread) * count);
 	return pool;
 }
 
 void threadPoolRun(struct ThreadPool* pool)
 {
+	Debug("threadPoolRun");
 	assert(pool && !pool->isStart);//如果此时线程池已经在运行
 	if (pool->mainLoop->threadID != pthread_self()) { //如果执行这个函数的线程不是主线程
 		exit(0);
 	}
 	pool->isStart = true;
-	if (pool->threadNum > 0) {
+	if (pool->threadNum) {
 		for (int i = 0; i < pool->threadNum; ++i) {
 			workerThreadInit(&pool->workerThreads[i], i);
+			Debug("workerThreadInit");
 			workerThreadRun(&pool->workerThreads[i]);
+			Debug("workerThreadRun");
+
 		}
 	}
 }
@@ -37,7 +43,7 @@ struct EventLoop* takeWorkerEventLoop(struct ThreadPool* pool)
 	struct EventLoop* evLoop = pool->mainLoop;
 	if (pool->threadNum > 0) {
 		evLoop = pool->workerThreads[pool->index].evLoop;
-		pool->index = (++pool->index) % pool->threadNum;//循环index，将任务均匀分配给每一个子线程
+		pool->index = ++pool->index % pool->threadNum;//循环index，将任务均匀分配给每一个子线程
 	}
 	return evLoop;
 }

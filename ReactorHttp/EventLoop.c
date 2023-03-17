@@ -13,10 +13,10 @@ struct EventLoop* eventLoopInit(){
 
 void taskWakeup(struct EventLoop* evloop) {
     const char* msg = "祝看到这句话的人天天开心！";
-    write(evloop->socketPair[0], msg, sizeof msg);
+    write(evloop->socketPair[0], msg, strlen(msg));
 }
 
-int readLocalMassage(void* arg) {
+int readLocalMessage(void* arg) {
     struct EventLoop* evloop = (struct EventLoop*)arg;
     char buf[256];
     read(evloop->socketPair[1], buf, sizeof(buf));//读出即可 无需处理
@@ -49,7 +49,7 @@ struct EventLoop* eventLoopInitEx(const char* threadName){
     Debug("49 in");
 
     //指定evLoop->socketPair[0]发送，[1]接收 将socketPair[1]封装成一个channel
-    struct Channel* channel = channelInit(evLoop->socketPair[1], ReadEvent, readLocalMassage, NULL, NULL, evLoop);//只用来读，用来激活分发模型
+    struct Channel* channel = channelInit(evLoop->socketPair[1], ReadEvent, readLocalMessage, NULL, NULL, evLoop);//只用来读，用来激活分发模型
     //将封装的channel添加到任务队列
     Debug("going to add task");
     eventLoopAddTask(evLoop, channel, ADD);
@@ -86,7 +86,7 @@ int eventActivate(struct EventLoop* evLoop, int fd, int event){
         channel->readCallback(channel->arg);
     }
     if (event & WriteEvent && channel->writeCallback) { //写事件
-        channel->readCallback(channel->arg);
+        channel->writeCallback(channel->arg);
     }
 
     return 0;
@@ -188,7 +188,7 @@ int eventLoopModify(struct EventLoop* evLoop, struct Channel* channel)
 {
     int fd = channel->fd;
     struct ChannelMap* channelMap = evLoop->channelMap;
-    if (fd >= channelMap->size || channelMap->list[fd] == NULL) {
+    if (channelMap->list[fd] == NULL) {
         return -1;
     }
     int ret = evLoop->dispatcher->modify(channel, evLoop);

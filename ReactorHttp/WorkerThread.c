@@ -16,7 +16,7 @@ void* subThreadRunning(void* arg) {//arg是创建子线程时传入的thread
 	struct WorkerThread* thread = (struct WorkerThread*)arg;
 	pthread_mutex_lock(&thread->mutex);
 	thread->evLoop = eventLoopInitEx(thread->name);
-	pthread_mutex_lock(&thread->mutex);
+	pthread_mutex_unlock(&thread->mutex);//解锁
 	pthread_cond_signal(&thread->cond);//唤醒主进程
 	eventLoopRun(thread->evLoop);
 	return NULL;
@@ -25,7 +25,7 @@ void* subThreadRunning(void* arg) {//arg是创建子线程时传入的thread
 void workerThreadRun(struct WorkerThread* thread)
 {
 	//创建子线程
-	pthread_create(thread->threadID, NULL, subThreadRunning, thread);
+	pthread_create(&thread->threadID, NULL, subThreadRunning, thread);
 	//阻塞主线程到子线程结束
 	pthread_mutex_lock(&thread->mutex);
 	while (thread->evLoop == NULL) {

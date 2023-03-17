@@ -34,7 +34,7 @@ struct Listener* listenerInit(unsigned short port)
 	int opt = 1;//代表可以端口复用
 	int ret = setsockopt(lfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof opt);
 	if (ret == -1) {  //设置失败返回-1
-		perror("socketopt");
+		perror("setsockopt");
 		return NULL;
 	}
 	//3.绑定
@@ -80,8 +80,14 @@ void tcpServerRun(struct TcpServer* server)
 	//初始化一个channel实例
 	struct Channel* channel = channelInit(server->listener->lfd, 
 		ReadEvent, acceptConnection, NULL, NULL, server);//待补充
+	Debug("channelInit server.c83");
+
 	//添加检测任务
 	eventLoopAddTask(server->mainLoop, channel, ADD); //将channel ADD到mainLoop中
+	Debug("addTask server.c87");
+
 	//启动反应堆模型
 	eventLoopRun(server->mainLoop);
+	Debug("LoopRun server.c91");
+
 }

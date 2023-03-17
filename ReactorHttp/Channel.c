@@ -1,8 +1,11 @@
 #include "Channel.h"
 #include<stdlib.h>
+#include"Log.h"
 
-Channel* channelInit(int fd, int events, handleFund readFunc, handleFund writeFunc, handleFund destroyFunc, void* arg)
+Channel* channelInit(int fd, int events, handleFunc readFunc,
+ handleFunc writeFunc, handleFunc destroyFunc, void* arg)
 {
+	Debug("chennelInit in channel.c 8");
 	struct Channel* channel = (struct Channel*)malloc(sizeof(struct Channel));
 	channel->arg = arg;
 	channel->fd = fd;

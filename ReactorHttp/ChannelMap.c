@@ -42,5 +42,5 @@ bool makeMapRoom(ChannelMap* map, int newSize, int unitSize)
 		memset(&map->list[map->size], 0, (curSize - map->size) * unitSize);//将新加的空间清空
 		map->size = curSize;
 	}
-	return false;
+	return true;
 }

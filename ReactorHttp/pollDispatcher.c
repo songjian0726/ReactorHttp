@@ -115,10 +115,10 @@ static int pollDispatch(EventLoop* evLoop, int timeout) {
 		if (data->fds[i].fd == -1) {
 			continue;
 		}
-		if (data->fds[i].events & POLLIN) {
+		if (data->fds[i].revents & POLLIN) {
 			eventActivate(evLoop, data->fds[i].fd, ReadEvent);
 		}
-		if (data->fds[i].events & POLLOUT) {
+		if (data->fds[i].revents & POLLOUT) {
 			eventActivate(evLoop, data->fds[i].fd, WriteEvent);
 		}
 	}

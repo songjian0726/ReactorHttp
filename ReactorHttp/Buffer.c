@@ -26,8 +26,8 @@ void bufferDestroy(struct Buffer* buf)
 		if (buf->data != NULL) {
 			free(buf->data);
 		}
-		free(buf);
 	}
+	free(buf);
 }
 
 void bufferExtendRoom(struct Buffer* buffer, int size)//这里的size是每次写时写入的大小
@@ -35,7 +35,7 @@ void bufferExtendRoom(struct Buffer* buffer, int size)//这里的size是每次写时写入
 	if (bufferWriteableSize(buffer) >= size) {//内存够写
 		return;
 	}
-	if (buffer->readPos + bufferWriteableSize(buffer) >= size) {
+	else if (buffer->readPos + bufferWriteableSize(buffer) >= size) {
 		//得到未读内存大小
 		int readable = bufferReadableSize(buffer);
 		//移动内存
@@ -126,7 +126,7 @@ int bufferSendData(struct Buffer* buffer, int socket)
 	int readable = bufferReadableSize(buffer);
 	if (readable > 0) {
 		int count = send(socket, buffer->data + buffer->readPos, readable, MSG_NOSIGNAL);
-		if (count) {
+		if (count > 0) {
 			buffer->readPos += count;
 			usleep(1);
 		}

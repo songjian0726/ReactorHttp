@@ -3,6 +3,7 @@
 #include"ChannelMap.h"
 #include<pthread.h>
 #include"TcpConnection.h"
+#include<stdbool.h>
 
 extern struct Dispatcher EpollDispatcher;//声明外部的全局变量
 extern struct Dispatcher PollDispatcher;

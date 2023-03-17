@@ -15,12 +15,12 @@ struct TcpConnection {
 	struct Buffer* writeBuf;
 	char name[32];
 	//http协议
-	struct HttpResponse* response;
 	struct HttpRequest* request;
+	struct HttpResponse* response;
 };
 
 //初始化
 struct TcpConnection* tcpConnectionInit(int fd, struct EventLoop* evLoop);
 
 //资源释放
-int tcpConnectionDestroy(void* arg);
+int tcpConnectionDestroy(void* conn);

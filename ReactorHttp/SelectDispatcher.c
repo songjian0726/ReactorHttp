@@ -64,9 +64,6 @@ static int SelectAdd(Channel* channel, EventLoop* evLoop) {
 
 static int SelectRemove(Channel* channel, EventLoop* evLoop) {
 	struct SelectData* data = (struct SelectData*)evLoop->dispatcherData;
-	if (channel->fd >= Max) {
-		return -1;
-	}
 	clearFdSet(channel, data);
 	//通过channel释放对应的tcpconnection资源
 	channel->destroyCallback(channel->arg);
@@ -75,8 +72,8 @@ static int SelectRemove(Channel* channel, EventLoop* evLoop) {
 
 static int SelectModify(Channel* channel, EventLoop* evLoop) {
 	struct SelectData* data = (struct SelectData*)evLoop->dispatcherData;
-	clearFdSet(channel, data);
 	setFdSet(channel, data);
+	clearFdSet(channel, data);
 	return 0;//成功返回0 失败返回-1
 }
 

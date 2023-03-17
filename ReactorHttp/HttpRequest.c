@@ -13,13 +13,14 @@
 #include<unistd.h>
 #include<ctype.h>
 #include"Log.h"
+#include"TcpConnection.h"
 
 #define HeaderSize (12)
 struct HttpRequest* httpRequestInit()
 {
     struct HttpRequest* request = (struct HttpRequest*)malloc(sizeof(struct HttpRequest));
     httpRequestReset(request);
-    request->reqHeaders = (struct HttpRequest*)malloc(sizeof(struct HttpRequest) * HeaderSize);
+    request->reqHeaders = (struct RequestHeader*)malloc(sizeof(struct RequestHeader) * HeaderSize);
 
     return request;
 }
@@ -137,7 +138,8 @@ bool parseHttpRequestLine(struct HttpRequest* request, struct Buffer* readBuf)
 #endif
 
         //准备解析请求头
-        readBuf->readPos = readBuf->readPos + lineSize + 2;//已经读了lineSize个字节，将readPos后移 后面还有\r\n 再后移2字节
+        readBuf->readPos += lineSize;//已经读了lineSize个字节，将readPos后移 后面还有\r\n 再后移2字节
+        readBuf->readPos += 2;
         //修改当前的解析状态
         request->curState = ParseReqHeaders;
         return true;
@@ -246,7 +248,6 @@ bool processHttpRequest(struct HttpRequest* request, struct HttpResponse* respon
         //响应头
         httpResponseAddHeader(response, "Content-type", getFileType(".html"));
         response->sendDataFunc = sendFile;
-        return 0;
     }
     strcpy(response->fileName, file);
     response->statusCode = OK;
@@ -260,7 +261,6 @@ bool processHttpRequest(struct HttpRequest* request, struct HttpResponse* respon
         //响应头
         httpResponseAddHeader(response, "Content-type", getFileType(".html"));
         response->sendDataFunc = sendDir;
-        return 0;
     }
     else
     {
@@ -273,7 +273,6 @@ bool processHttpRequest(struct HttpRequest* request, struct HttpResponse* respon
         httpResponseAddHeader(response, "Content-type", getFileType(file));
         httpResponseAddHeader(response, "Content-length", tmp);
         response->sendDataFunc = sendFile;
-        return 0;
     }
     return false;
 }
@@ -361,7 +360,7 @@ const char* getFileType(const char* name)
 }
 
 
-int sendDir(const char* dirName, struct Buffer* sendBuf, int cfd)
+void sendDir(const char* dirName, struct Buffer* sendBuf, int cfd)
 {
     char buf[4096] = { 0 };
     sprintf(buf, "<html><head><title>%s</title></head><body><table>", dirName);
@@ -403,11 +402,10 @@ int sendDir(const char* dirName, struct Buffer* sendBuf, int cfd)
     bufferSendData(sendBuf, cfd);
 #endif
     free(namelist);
-    return 0;
 }
 
 
-int sendFile(const char* fileName, struct Buffer* sendBuf, int cfd)
+void sendFile(const char* fileName, struct Buffer* sendBuf, int cfd)
 {
     // 1. 打开文件
     int fd = open(fileName, O_RDONLY);
@@ -451,5 +449,4 @@ int sendFile(const char* fileName, struct Buffer* sendBuf, int cfd)
     }
 #endif
     close(fd);
-    return 0;
 }

@@ -3,10 +3,10 @@
 
 //¶¨ÒåÃ¶¾Ù×´Ì¬Âë
 enum HttpStatusCode {
-	Unkown,//0
+	Unknown,//0
 	OK = 200,
-	MovePermanently = 301,
-	MoveTemporarily = 302,
+	MovedPermanently = 301,
+	MovedTemporarily = 302,
 	BadRequest = 400,
 	NotFound = 404
 };
